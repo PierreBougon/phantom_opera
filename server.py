@@ -1,9 +1,10 @@
-import cProfile
 import sys
+from logging import Logger
+from threading import Thread
 
-from src.Game import Game
-from src.Player import Player
-from src.globals import logger, clients, link
+from src.network.Client import Client
+import src.utils.globals as glob
+from src.network.Matchmaking import matchmaking
 
 """
     The order of connexion of the sockets is important.
@@ -12,37 +13,46 @@ from src.globals import logger, clients, link
 """
 
 
-def init_connexion():
-    while len(clients) != 2:
-        link.listen(2)
-        (clientsocket, addr) = link.accept()
-        logger.info("Received client !")
-        clients.append(clientsocket)
-        clientsocket.settimeout(500)
+def handle_connections(logger: Logger):
+    glob.sock.listen(5)
+    try:
+        while glob.server_running:
+            (clientsocket, addr) = glob.sock.accept()
+            logger.info("New client has logged on !")
+            glob.current_thread_id += 1
+            client = Client(clientsocket, glob.current_thread_id, logger)
+            glob.waiting_clients.append(client)
+            clientsocket.settimeout(500)
+            clientthread = Thread(target=client.handle_messages)
+            clientthread.start()
+            glob.clientThreads[glob.current_thread_id] = clientthread
+    except OSError:
+        logger.info("Closing the network")
 
 
 if __name__ == '__main__':
-    players = [Player(0), Player(1)]
-    scores = []
 
-    logger.info("no client yet")
-    init_connexion()
-    logger.info("received all clients")
+    _logger = glob.create_main_logger()
+    _logger.info("Launching server ...")
 
-    # profiling
-    pr = cProfile.Profile()
-    pr.enable()
+    handlerThread = Thread(target=handle_connections, args=(_logger,))
+    handlerThread.start()
 
-    game = Game(players)
-    game.lancer()
+    matchmakingThread = Thread(target=matchmaking, args=(_logger,))
+    matchmakingThread.start()
 
-    link.close()
+    while glob.server_running:
+        command = input()
+        if command == "quit":
+            _logger.info("Server shutdown !")
+            glob.server_running = False
+            glob.sock.close()
 
-    # profiling
-    pr.disable()
-    # stats_file = open("{}.txt".format(os.path.basename(__file__)), 'w')
-    stats_file = open("./logs/profiling.txt", 'w')
-    sys.stdout = stats_file
-    pr.print_stats(sort='time')
+    for ctKey in glob.clientThreads:
+        glob.clientThreads[ctKey].join()
+    for roomKey in glob.roomThreads:
+        glob.roomThreads[roomKey].join()
+    handlerThread.join()
+    matchmakingThread.join()
 
     sys.stdout = sys.__stdout__

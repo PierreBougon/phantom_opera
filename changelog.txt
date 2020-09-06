@@ -24,3 +24,7 @@ Blue power : blocked_list is correctly updated so that game_state is accurate.
 26/11/2019
 Edit phases so that they respect the order IFFI, FIIF.
 Put back tiles in game_state.
+
+09/6/2020
+Rework the server to handle multiple clients, doesn't care about order, consistent server
+Look at PR #12 if you want more information about the server rework

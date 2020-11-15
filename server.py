@@ -1,3 +1,4 @@
+import signal
 import sys
 from logging import Logger
 from threading import Thread
@@ -5,6 +6,7 @@ from threading import Thread
 from src.network.Client import Client
 import src.utils.globals as glob
 from src.network.Matchmaking import matchmaking
+from src.utils.csv_manager import csv_stats_file, auto_flush_file
 
 """
     The order of connexion of the sockets is important.
@@ -30,8 +32,11 @@ def handle_connections(logger: Logger):
         logger.info("Closing the network")
 
 
-if __name__ == '__main__':
+def sigint_handler(signum, frame):
+    pass
 
+
+if __name__ == '__main__':
     _logger = glob.create_main_logger()
     _logger.info("Launching server ...")
 
@@ -40,6 +45,13 @@ if __name__ == '__main__':
 
     matchmakingThread = Thread(target=matchmaking, args=(_logger,))
     matchmakingThread.start()
+
+    statFileThread = Thread(target=auto_flush_file, args=(csv_stats_file,))
+    statFileThread.start()
+
+    signal.signal(signal.SIGINT, sigint_handler)
+
+    _logger.info("Server successfully started !")
 
     while glob.server_running:
         command = input()
@@ -54,5 +66,8 @@ if __name__ == '__main__':
         glob.roomThreads[roomKey].join()
     handlerThread.join()
     matchmakingThread.join()
+    statFileThread.join()
+
+    csv_stats_file.close()
 
     sys.stdout = sys.__stdout__

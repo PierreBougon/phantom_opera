@@ -7,15 +7,10 @@ from logging.handlers import RotatingFileHandler
 
 from src.network import Protocol
 
-heroku = True
-if heroku:
-    hostname = "phantom-opera-server.herokuapp.com"
-    host = socket.gethostbyname(hostname)
-    port = 80
-else:
-    host = "localhost"
-    port = 12000
-    # HEADERSIZE = 10
+
+host = "localhost"
+port = 12000
+# HEADERSIZE = 10
 
 """
 set up inspector logging
@@ -74,7 +69,7 @@ class Player():
         Protocol.send(self.socket, bytes_data)
 
     def authenticate(self):
-        Protocol.send_string(self.socket, "inspector connection")
+        Protocol.send_string(self.socket, "inspector connection random@epitech.eu")
         auth_resp = Protocol.receive_string(self.socket)
 
         if not auth_resp == "connection accepted":

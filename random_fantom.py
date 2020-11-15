@@ -7,17 +7,9 @@ from logging.handlers import RotatingFileHandler
 
 from src.network import Protocol
 
-heroku = True
-if heroku:
-    hostname = "phantom-opera-server.herokuapp.com"
-    print("Trying to get hostname", flush=True)
-    host = socket.gethostbyname(hostname)
-    print("Got a hostname: " + str(host), flush=True)
-    port = 80
-else:
-    host = "localhost"
-    port = 12000
-    # HEADERSIZE = 10
+host = "localhost"
+port = 12000
+# HEADERSIZE = 10
 
 """
 set up fantom logging
@@ -76,7 +68,7 @@ class Player():
 
     def authenticate(self):
         print("Trying to authenticate", flush=True)
-        Protocol.send_string(self.socket, "fantom connection")
+        Protocol.send_string(self.socket, "fantom connection random@epitech.eu")
         print("Asked for authentication", flush=True)
         auth_resp = Protocol.receive_string(self.socket)
         print("Received response : " + auth_resp, flush=True)
